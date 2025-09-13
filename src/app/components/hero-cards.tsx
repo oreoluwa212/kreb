@@ -8,7 +8,9 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 export function HeroCards() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [cardsPerView, setCardsPerView] = useState(2);
-  const [cardWidth, setCardWidth] = useState(384);
+  const [cardWidth, setCardWidth] = useState(600);
+  const [gap, setGap] = useState(24);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     const updateLayout = () => {
@@ -18,10 +20,10 @@ export function HeroCards() {
         setCardWidth(width - 48);
       } else if (width < 1024) {
         setCardsPerView(1);
-        setCardWidth(384);
+        setCardWidth(width * 0.9);
       } else {
         setCardsPerView(2);
-        setCardWidth(384);
+        setCardWidth((width - gap * (cardsPerView - 1)) / cardsPerView);
       }
     };
 
@@ -88,51 +90,109 @@ export function HeroCards() {
     },
   ];
 
-  const maxSlide = Math.max(0, cards.length - cardsPerView);
-  const gap = 24;
+  const extendedCards = [...cards, ...cards, ...cards];
+  const startIndex = cards.length;
+
+  const [realIndex, setRealIndex] = useState(startIndex);
+
+  useEffect(() => {
+    if (isMounted) {
+      setRealIndex(startIndex);
+      setCurrentSlide(0);
+    }
+  }, [cardsPerView, isMounted]);
 
   const nextSlide = () => {
-    setCurrentSlide((prev) => (prev >= maxSlide ? 0 : prev + 1));
+    const newIndex = realIndex + 1;
+    setRealIndex(newIndex);
+    setCurrentSlide((prev) => prev + 1);
+
+    if (newIndex >= cards.length * 2) {
+      setTimeout(() => {
+        setRealIndex(cards.length);
+        setCurrentSlide(cards.length - startIndex);
+      }, 300);
+    }
   };
 
   const prevSlide = () => {
-    setCurrentSlide((prev) => (prev <= 0 ? maxSlide : prev - 1));
+    const newIndex = realIndex - 1;
+    setRealIndex(newIndex);
+    setCurrentSlide((prev) => prev - 1);
+
+    if (newIndex < cards.length) {
+      setTimeout(() => {
+        setRealIndex(cards.length * 2 - 1);
+        setCurrentSlide(cards.length - 1 - (startIndex - cards.length));
+      }, 300);
+    }
   };
+
+  const goToSlide = (index: number) => {
+    const targetIndex = startIndex + index;
+    setRealIndex(targetIndex);
+    setCurrentSlide(index);
+  };
+
+  if (!isMounted) {
+    return (
+      <div className="relative mb-8 w-full">
+        <div className="overflow-hidden px-4 sm:px-0">
+          <div className="flex gap-4 sm:gap-6 lg:gap-8">
+            <div
+              className="flex-shrink-0 h-64 sm:h-72 lg:h-80 bg-gray-200 dark:bg-gray-800 rounded-lg animate-pulse"
+              style={{ width: 600 }}
+            />
+            <div
+              className="flex-shrink-0 h-64 sm:h-72 lg:h-80 bg-gray-200 dark:bg-gray-800 rounded-lg animate-pulse hidden lg:block"
+              style={{ width: 600 }}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative mb-8 w-full">
-      <div className="overflow-hidden px-3 sm:px-0">
+      <div className="overflow-hidden px-4 sm:px-0">
         <div
-          className="flex gap-6 transition-transform duration-300 ease-in-out"
+          className="flex gap-4 sm:gap-6 lg:gap-8 transition-transform duration-300 ease-in-out"
           style={{
-            transform: `translateX(-${currentSlide * (cardWidth + gap)}px)`,
+            transform: `translateX(-${
+              (realIndex - startIndex) * (cardWidth + gap)
+            }px)`,
           }}
         >
-          {cards.map((card) => (
+          {extendedCards.map((card, index) => (
             <Card
-              key={card.id}
-              className={`flex-shrink-0 h-64 sm:h-72 bg-gradient-to-br ${card.gradientFrom} ${card.gradientTo} relative overflow-hidden border-0`}
+              key={`${card.id}-${Math.floor(index / cards.length)}`}
+              className={`flex-shrink-0 h-64 sm:h-72 lg:h-80 bg-gradient-to-br ${card.gradientFrom} ${card.gradientTo} relative overflow-hidden border-0`}
               style={{ width: cardWidth }}
             >
               <div className="absolute inset-0 bg-black/10 dark:bg-black/20" />
 
-              <div className="relative p-4 sm:p-6 h-full flex flex-col justify-between text-white">
-                <div className="flex-1">
+              <div className="relative p-4 sm:p-6 lg:p-8 h-full flex flex-col justify-between text-white">
+                <div className="space-y-3">
                   <div className="inline-flex items-center gap-1 text-xs text-white">
                     <span className="font-medium">{card.badge}</span>
                   </div>
 
-                  <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white my-4 sm:my-7 leading-tight text-center">
+                  <h2 className="text-2xl sm:text-3xl lg:text-5xl mt-4 font-bold text-white leading-tight text-center">
                     {card.title}
                   </h2>
-
-                  <p className="text-white/95 text-sm font-medium mb-2 sm:mb-3">
-                    {card.subtitle}
-                  </p>
-
-                  <p className="text-white/85 text-xs leading-relaxed">
+                </div>
+                <p className="text-white/95 text-sm font-medium">
+                  {card.subtitle}
+                </p>
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-5">
+                  <p className="text-white/85 text-xs leading-relaxed flex-1">
                     {card.description}
                   </p>
+
+                  <Button className="bg-white text-black hover:bg-white/90 rounded-full px-4 py-2 text-xs sm:text-sm whitespace-nowrap flex-shrink-0">
+                    {card.buttonText}
+                  </Button>
                 </div>
               </div>
             </Card>
@@ -143,9 +203,8 @@ export function HeroCards() {
       <Button
         variant="ghost"
         size="icon"
-        className="absolute left-1 sm:left-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 backdrop-blur-sm !text-white border-0 z-10 rounded-full h-8 w-8 sm:h-10 sm:w-10"
+        className="absolute left-6 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 backdrop-blur-sm !text-white border-0 z-10 rounded-full h-8 w-8 sm:h-10 sm:w-10"
         onClick={prevSlide}
-        disabled={currentSlide === 0}
       >
         <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
       </Button>
@@ -153,23 +212,22 @@ export function HeroCards() {
       <Button
         variant="ghost"
         size="icon"
-        className="absolute right-1 sm:right-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 backdrop-blur-sm !text-white border-0 z-10 rounded-full h-8 w-8 sm:h-10 sm:w-10"
+        className="absolute right-6 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 backdrop-blur-sm !text-white border-0 z-10 rounded-full h-8 w-8 sm:h-10 sm:w-10"
         onClick={nextSlide}
-        disabled={currentSlide >= maxSlide}
       >
         <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
       </Button>
 
       <div className="flex justify-center mt-4 sm:mt-6 gap-2">
-        {Array.from({ length: maxSlide + 1 }).map((_, index) => (
+        {cards.map((_, index) => (
           <button
             key={index}
             className={`w-2 h-2 rounded-full transition-all duration-200 ${
-              currentSlide === index
+              currentSlide % cards.length === index
                 ? "bg-blue-500 w-4 sm:w-6"
                 : "bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500"
             }`}
-            onClick={() => setCurrentSlide(index)}
+            onClick={() => goToSlide(index)}
           />
         ))}
       </div>

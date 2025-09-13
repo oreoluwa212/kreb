@@ -18,7 +18,7 @@ export function GalleryFooter() {
               className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
             >
               <User className="h-4 w-4 mr-2" />
-              User
+              Legal
             </Button>
             <Button
               variant="ghost"
