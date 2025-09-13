@@ -7,31 +7,9 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export function HeroCards() {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [cardsPerView, setCardsPerView] = useState(2);
-  const [cardWidth, setCardWidth] = useState(600);
-  const [gap, setGap] = useState(24);
-  const [isMounted, setIsMounted] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
-  useEffect(() => {
-    const updateLayout = () => {
-      const width = window.innerWidth;
-      if (width < 640) {
-        setCardsPerView(1);
-        setCardWidth(width - 48);
-      } else if (width < 1024) {
-        setCardsPerView(1);
-        setCardWidth(width * 0.9);
-      } else {
-        setCardsPerView(2);
-        setCardWidth((width - gap * (cardsPerView - 1)) / cardsPerView);
-      }
-    };
-
-    updateLayout();
-    window.addEventListener("resize", updateLayout);
-    return () => window.removeEventListener("resize", updateLayout);
-  }, []);
-
+  // Use CSS-based responsive design instead of JS calculations
   const cards = [
     {
       id: 1,
@@ -90,23 +68,22 @@ export function HeroCards() {
     },
   ];
 
+  // Create extended cards array for infinite scroll
   const extendedCards = [...cards, ...cards, ...cards];
   const startIndex = cards.length;
-
   const [realIndex, setRealIndex] = useState(startIndex);
 
   useEffect(() => {
-    if (isMounted) {
-      setRealIndex(startIndex);
-      setCurrentSlide(0);
-    }
-  }, [cardsPerView, isMounted]);
+    setIsClient(true);
+    setRealIndex(startIndex);
+  }, []);
 
   const nextSlide = () => {
     const newIndex = realIndex + 1;
     setRealIndex(newIndex);
     setCurrentSlide((prev) => prev + 1);
 
+    // Reset position when reaching the end
     if (newIndex >= cards.length * 2) {
       setTimeout(() => {
         setRealIndex(cards.length);
@@ -120,6 +97,7 @@ export function HeroCards() {
     setRealIndex(newIndex);
     setCurrentSlide((prev) => prev - 1);
 
+    // Reset position when reaching the beginning
     if (newIndex < cards.length) {
       setTimeout(() => {
         setRealIndex(cards.length * 2 - 1);
@@ -134,41 +112,22 @@ export function HeroCards() {
     setCurrentSlide(index);
   };
 
-  if (!isMounted) {
-    return (
-      <div className="relative mb-8 w-full">
-        <div className="overflow-hidden px-4 sm:px-0">
-          <div className="flex gap-4 sm:gap-6 lg:gap-8">
-            <div
-              className="flex-shrink-0 h-64 sm:h-72 lg:h-80 bg-gray-200 dark:bg-gray-800 rounded-lg animate-pulse"
-              style={{ width: 600 }}
-            />
-            <div
-              className="flex-shrink-0 h-64 sm:h-72 lg:h-80 bg-gray-200 dark:bg-gray-800 rounded-lg animate-pulse hidden lg:block"
-              style={{ width: 600 }}
-            />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="relative mb-8 w-full">
       <div className="overflow-hidden px-4 sm:px-0">
         <div
-          className="flex gap-4 sm:gap-6 lg:gap-8 transition-transform duration-300 ease-in-out"
+          className="flex transition-transform duration-300 ease-in-out"
           style={{
-            transform: `translateX(-${
-              (realIndex - startIndex) * (cardWidth + gap)
-            }px)`,
+            transform: isClient ? `translateX(-${(realIndex - startIndex) * 100}%)` : 'translateX(0)',
+            gap: '1rem',
           }}
         >
           {extendedCards.map((card, index) => (
             <Card
               key={`${card.id}-${Math.floor(index / cards.length)}`}
-              className={`flex-shrink-0 h-64 sm:h-72 lg:h-80 bg-gradient-to-br ${card.gradientFrom} ${card.gradientTo} relative overflow-hidden border-0`}
-              style={{ width: cardWidth }}
+              className={`flex-shrink-0 h-64 sm:h-72 lg:h-80 bg-gradient-to-br ${card.gradientFrom} ${card.gradientTo} relative overflow-hidden border-0
+                w-[75vw] sm:w-[85vw] md:w-[70vw] lg:w-[45vw] xl:w-[40vw]
+                max-w-xs sm:max-w-md lg:max-w-2xl`}
             >
               <div className="absolute inset-0 bg-black/10 dark:bg-black/20" />
 
@@ -205,6 +164,7 @@ export function HeroCards() {
         size="icon"
         className="absolute left-6 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 backdrop-blur-sm !text-white border-0 z-10 rounded-full h-8 w-8 sm:h-10 sm:w-10"
         onClick={prevSlide}
+        aria-label="Previous slide"
       >
         <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
       </Button>
@@ -214,6 +174,7 @@ export function HeroCards() {
         size="icon"
         className="absolute right-6 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 backdrop-blur-sm !text-white border-0 z-10 rounded-full h-8 w-8 sm:h-10 sm:w-10"
         onClick={nextSlide}
+        aria-label="Next slide"
       >
         <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
       </Button>
@@ -228,6 +189,7 @@ export function HeroCards() {
                 : "bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500"
             }`}
             onClick={() => goToSlide(index)}
+            aria-label={`Go to slide ${index + 1}`}
           />
         ))}
       </div>
