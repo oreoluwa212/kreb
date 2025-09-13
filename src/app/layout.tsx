@@ -6,7 +6,7 @@ import { ThemeProvider } from "./components/theme-provider";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "AI Models Dashboard",
+  title: "Krea AI | Dashboard",
   description: "AI Models Dashboard with WAN 2.2 and FLUX1 Krea",
 };
 
